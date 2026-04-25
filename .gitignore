@@ -2,7 +2,9 @@
 node_modules/
 
 # environment variables
+.env
 .env.local
+src/.env
 .env.development.local
 .env.test.local
 .env.production.local
