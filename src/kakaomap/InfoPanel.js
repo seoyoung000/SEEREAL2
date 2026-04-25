@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import "./InfoPanel.css";
 
 const dealsData = [];
@@ -57,7 +57,7 @@ const RENT_DEALS_BY_COMPLEX = rentDealsData.reduce((acc, deal) => {
 
 function InfoPanel({ type = "zone", data, onClose }) {
   const [dealType, setDealType] = useState("sale");
-
+  
   const panelData = data || {};
   const zoneStats = Array.isArray(panelData.stats) ? panelData.stats : [];
   const latestZoneStat =
@@ -122,6 +122,16 @@ function InfoPanel({ type = "zone", data, onClose }) {
   const formatNumber = (num) =>
     num || num === 0 ? Number(num).toLocaleString() : "N/A";
 
+  const formatKoreanPrice = (val) => {
+    if (!val) return "0원";
+    if (val >= 100000000) {
+      const eok = Math.floor(val / 100000000);
+      const remainder = Math.round((val % 100000000) / 10000);
+      return remainder > 0 ? `${eok.toLocaleString()}억 ${remainder.toLocaleString()}만원` : `${eok.toLocaleString()}억원`;
+    }
+    return `${Math.round(val / 10000).toLocaleString()}만원`;
+  };
+
   const formatPeriod = (stat) =>
     stat ? `${stat.year}.${stat.month.toString().padStart(2, "0")}` : "";
 
@@ -136,6 +146,33 @@ function InfoPanel({ type = "zone", data, onClose }) {
 
   const formatDealDate = (dateString) =>
     dateString ? dateString.replace(/-/g, ".") : "-";
+
+  const renderAISection = (prediction) => {
+    if (!prediction) return null;
+
+    return (
+      <div className="ai-result-card mini">
+        <div className="ai-result-main">
+          <span className={`ai-direction ${prediction.direction === "수익성 높음" ? "high" : prediction.direction === "보통" ? "normal" : "low"}`}>
+            {prediction.direction}
+          </span>
+          <div className="ai-score">
+            점수: <strong>{prediction.score}</strong>
+          </div>
+        </div>
+        <div className="ai-details">
+          <div className="ai-detail-item">
+            <label>비례율</label>
+            <span>{prediction.predRatio}%</span>
+          </div>
+          <div className="ai-detail-item">
+            <label>분담금</label>
+            <span>{formatKoreanPrice(prediction.predCost)}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderZoneInfo = () => {
     if (isSimpleZone) {
@@ -196,6 +233,7 @@ function InfoPanel({ type = "zone", data, onClose }) {
             <span>{formatNumber(panelData.households)}</span>
           </div>
         </div>
+
         {latestZoneStat && (
           <div className="info-price-section">
             <p className="info-price-title">최근 평균 실거래가</p>
@@ -251,6 +289,12 @@ function InfoPanel({ type = "zone", data, onClose }) {
             <strong>주소</strong>
             <span>{panelData.address || "주소 정보 없음"}</span>
           </div>
+          <div className="info-item">
+            <strong>세대수 / 준공년도</strong>
+            <span>
+              {formatNumber(panelData.total_households)}세대 / {panelData.build_year}년
+            </span>
+          </div>
           {Array.isArray(panelData.areas) && panelData.areas.length > 0 && (
             <div className="info-item">
               <strong>전용 면적</strong>
@@ -269,10 +313,14 @@ function InfoPanel({ type = "zone", data, onClose }) {
           {dealType === "sale" && (
             <div className="info-item">
               <strong>최신 평균 실거래가</strong>
-              <span>{formatNumber(panelData.latest_avg)}원</span>
+              <span>
+                {panelData.latest_avg ? `${(panelData.latest_avg / 10000).toFixed(1)}억` : "N/A"}
+              </span>
             </div>
           )}
         </div>
+
+        {renderAISection(panelData.prediction)}
 
         <div className="info-deal-section">
           <div className="deal-type-selector">
@@ -310,7 +358,7 @@ function InfoPanel({ type = "zone", data, onClose }) {
                     <strong>{formatDealPrice(deal)}</strong>
                   </div>
                   <div className="deal-meta">
-                    <span>{formatAreaValue(deal.area_m2)}</span>
+                    <span>{formatAreaValue(deal.area || deal.area_m2)}</span>
                     <span>
                       {typeof deal.floor === "number"
                         ? `${deal.floor}층`

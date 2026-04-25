@@ -1,0 +1,140 @@
+[
+  {
+    "id": "흑석3",
+    "name": "흑석리버파크자이 (3구역)",
+    "address": "서울특별시 동작구 흑석동 253-89",
+    "lat": 37.501,
+    "lng": 126.958,
+    "build_year": 2023,
+    "total_households": 1772,
+    "ai_inputs": {
+      "districtCode": 11590500,
+      "approvalYear": 2019,
+      "moveInYear": 2023,
+      "landPrice": 3200000,
+      "actualPrice": 7500000,
+      "landChangeRate": 1.90,
+      "constructionIndex": 108.0,
+      "interestRate": 1.25,
+      "generalSales": 20.0,
+      "agingDegree": 85.0,
+      "neighborPrice": 22000000,
+      "plannedRatio": 244.91
+    }
+  },
+  {
+    "id": "흑석4",
+    "name": "흑석한강푸르지오 (4구역)",
+    "address": "서울특별시 동작구 흑석동 336",
+    "lat": 37.505,
+    "lng": 126.961,
+    "build_year": 2012,
+    "total_households": 863,
+    "ai_inputs": {
+      "districtCode": 11590500,
+      "approvalYear": 2010,
+      "moveInYear": 2012,
+      "landPrice": 1800000,
+      "actualPrice": 2730000,
+      "landChangeRate": 1.19,
+      "constructionIndex": 86.5,
+      "interestRate": 2.50,
+      "generalSales": 17.0,
+      "agingDegree": 75.0,
+      "neighborPrice": 12000000,
+      "plannedRatio": 222.0
+    }
+  },
+  {
+    "id": "흑석5",
+    "name": "흑석한강센트레빌1차 (5구역)",
+    "address": "서울특별시 동작구 흑석동 337",
+    "lat": 37.506,
+    "lng": 126.964,
+    "build_year": 2011,
+    "total_households": 655,
+    "ai_inputs": {
+      "districtCode": 11590500,
+      "approvalYear": 2009,
+      "moveInYear": 2011,
+      "landPrice": 1600000,
+      "actualPrice": 2420000,
+      "landChangeRate": -1.04,
+      "constructionIndex": 83.6,
+      "interestRate": 2.00,
+      "generalSales": 15.0,
+      "agingDegree": 70.0,
+      "neighborPrice": 11000000,
+      "plannedRatio": 230.0
+    }
+  },
+  {
+    "id": "흑석6",
+    "name": "흑석한강센트레빌2차 (6구역)",
+    "address": "서울특별시 동작구 흑석동 338",
+    "lat": 37.504,
+    "lng": 126.962,
+    "build_year": 2012,
+    "total_households": 963,
+    "ai_inputs": {
+      "districtCode": 11590500,
+      "approvalYear": 2010,
+      "moveInYear": 2012,
+      "landPrice": 1750000,
+      "actualPrice": 3300000,
+      "landChangeRate": 1.19,
+      "constructionIndex": 86.5,
+      "interestRate": 2.50,
+      "generalSales": 38.0,
+      "agingDegree": 70.0,
+      "neighborPrice": 12000000,
+      "plannedRatio": 221.0
+    }
+  },
+  {
+    "id": "흑석7",
+    "name": "아크로리버하임 (7구역)",
+    "address": "서울특별시 동작구 흑석동 158",
+    "lat": 37.509,
+    "lng": 126.963,
+    "build_year": 2018,
+    "total_households": 1073,
+    "ai_inputs": {
+      "districtCode": 11590500,
+      "approvalYear": 2015,
+      "moveInYear": 2018,
+      "landPrice": 2600000,
+      "actualPrice": 7140000,
+      "landChangeRate": 3.41,
+      "constructionIndex": 100.0,
+      "interestRate": 1.50,
+      "generalSales": 37.8,
+      "agingDegree": 53.1,
+      "neighborPrice": 20000000,
+      "plannedRatio": 250.0
+    }
+  },
+  {
+    "id": "흑석8",
+    "name": "롯데캐슬에듀포레 (8구역)",
+    "address": "서울특별시 동작구 흑석동 232-55",
+    "lat": 37.503,
+    "lng": 126.959,
+    "build_year": 2018,
+    "total_households": 545,
+    "ai_inputs": {
+      "districtCode": 11590500,
+      "approvalYear": 2015,
+      "moveInYear": 2018,
+      "landPrice": 2400000,
+      "actualPrice": 7140000,
+      "landChangeRate": 3.41,
+      "constructionIndex": 100.0,
+      "interestRate": 1.50,
+      "generalSales": 29.0,
+      "agingDegree": 65.0,
+      "neighborPrice": 20000000,
+      "plannedRatio": 250.0
+    }
+  }
+]

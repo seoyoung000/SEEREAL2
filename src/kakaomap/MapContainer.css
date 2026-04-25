@@ -1,7 +1,7 @@
 .map-fullscreen {
   position: relative;
   width: 100%;
-  min-height: 0;
+  height: 100vh;
   background: #f6f8fc;
   overflow: hidden;
 }
@@ -9,28 +9,32 @@
 .map-fullscreen__canvas {
   width: 100%;
   height: 100%;
-  min-height: 0;
 }
 
+/* 좌측 패널 스택 (3개 박스) */
 .map-overlay-stack {
   position: absolute;
-  top: 12px;
+  top: 20px;
   left: 20px;
-  width: min(360px, calc(100% - 32px));
-  max-width: 360px;
+  width: 380px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  z-index: 3;
+  gap: 12px;
+  z-index: 30;
+  pointer-events: none;
 }
 
+.map-overlay-stack > * {
+  pointer-events: auto;
+}
+
+/* 1. 검색/타이틀 패널 */
 .map-overlay-card {
-  width: 100%;
-  padding: 12px 16px 14px;
-  border-radius: 12px;
-  background: #ffffff;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
-  color: #0f172a;
+  background: white;
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.15);
+  box-sizing: border-box;
 }
 
 .map-overlay-eyebrow {
@@ -42,118 +46,160 @@
 }
 
 .map-overlay-card h2 {
-  margin: 2px 0 6px;
-  font-size: 17px;
+  margin: 2px 0 10px;
+  font-size: 18px;
   color: #0f172a;
 }
 
 .map-search-row {
   display: flex;
-  gap: 6px;
-  align-items: center;
+  gap: 8px;
 }
 
 .map-search-row input {
   flex: 1;
-  padding: 8px 12px;
-  border-radius: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
   border: 1px solid #d7dfeb;
   background: #f8fafc;
-  color: #0f172a;
   font-size: 14px;
 }
 
-.map-search-row input:focus {
-  outline: 2px solid #5c7cff;
-  background: #fff;
-}
-
 .map-search-row button {
+  padding: 10px 16px;
+  border-radius: 12px;
   border: none;
-  border-radius: 10px;
-  padding: 8px 14px;
+  background: #4162f5;
+  color: white;
   font-weight: 600;
   cursor: pointer;
-  background: #4162f5;
-  color: #fff;
-  transition: transform 0.15s ease;
 }
 
-.map-search-row button:hover {
-  transform: translateY(-1px);
-}
-
-.map-info-panel {
-  position: relative;
-  width: 100%;
-  padding: 12px 18px;
-  border-radius: 12px;
-  background: #ffffff;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16);
+/* 2 & 3. 좌측 정보/예측 패널 공통 */
+.map-info-panel.left,
+.map-info-panel.prediction {
   opacity: 0;
-  transform: translateX(-14px);
-  transition: opacity 0.28s ease, transform 0.28s ease;
-  pointer-events: none;
-  height: 420px;
-  max-height: 420px;
-  overflow: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  display: none;
 }
 
-.map-info-panel.open {
+.map-info-panel.left.open,
+.map-info-panel.prediction.open {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.map-info-panel .infoPanel,
+.side-panel-container.prediction {
+  background: white;
+  border-radius: 22px;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.22);
+  padding: 18px; /* 24px -> 18px 축소 */
+  box-sizing: border-box;
+}
+
+/* 예측 패널 스크롤 설정 */
+.side-panel-container.prediction {
+  max-height: 420px; /* 최대 높이 살짝 축소 */
+  display: flex;
+  flex-direction: column;
+}
+
+.side-panel-container.prediction .side-panel-content {
+  overflow-y: auto;
+  margin-top: 5px; /* 10px -> 5px */
+}
+
+.side-panel-container.prediction .side-panel-content::-webkit-scrollbar {
+  width: 5px;
+}
+
+.side-panel-container.prediction .side-panel-content::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+/* 우측 패널 스타일 */
+.map-info-panel.right {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 320px; /* 380px -> 320px 축소 */
+  z-index: 30;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: all 0.3s ease;
+  display: none;
+}
+
+.map-info-panel.right.open {
+  display: block;
   opacity: 1;
   transform: translateX(0);
-  pointer-events: auto;
 }
 
-.map-info-panel .infoPanel {
-  background: transparent;
-  box-shadow: none;
-  color: #0f172a;
+.side-panel-container {
+  background: white;
+  border-radius: 22px;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.22);
+  padding: 24px;
+  height: calc(100vh - 40px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
-.map-info-panel .infoPanel .close-btn {
-  background: #f4f6fb;
-  color: #0f172a;
-}
-
-.map-info-panel .infoPanel-content {
-  margin-top: 17px;
-  max-height: 340px;
+.side-panel-content {
   overflow-y: auto;
-  padding-right: 20px;
+  flex: 1;
 }
 
-.map-info-panel .info-item {
+.side-panel-title {
+  font-size: 20px;
+  font-weight: 700;
   color: #0f172a;
+  margin: 0 0 20px 0;
 }
 
-.map-fullscreen__canvas > div {
-  width: 100%;
-  height: 100%;
+.side-panel-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  border: none;
+  background: #f1f5f9;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-weight: bold;
 }
 
-@media (max-width: 1024px) {
-  .map-overlay-stack {
-    position: static;
-    width: auto;
-    margin: 12px;
-  }
+/* 인근 단지 리스트용 헬퍼 스타일 */
+.nearby-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
-  .map-fullscreen {
-    padding-top: 12px;
-  }
+.nearby-item {
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 16px;
+}
 
-  .map-info-panel {
-    transform: translateY(40px);
-    height: auto;
-    max-height: 55vh;
-  }
+.nearby-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
 
-  .map-info-panel.open {
-    transform: translateY(0);
-  }
+.nearby-name {
+  font-size: 15px;
+  font-weight: 600;
+}
 
-  .map-info-panel .infoPanel-content {
-    max-height: calc(55vh - 80px);
-  }
+.nearby-dist {
+  font-size: 12px;
+  color: #94a3b8;
 }
