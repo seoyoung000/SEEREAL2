@@ -3,7 +3,12 @@ name: Sync Apartment Prices
 on:
   schedule:
     - cron: '0 15 * * *'  # 매일 KST 자정 (UTC 15:00)
-  workflow_dispatch:        # GitHub에서 수동 실행 버튼
+  workflow_dispatch:
+    inputs:
+      max_pages:
+        description: '최대 페이지 수 (테스트: 3, 전체: 비워두기)'
+        required: false
+        default: ''
 
 jobs:
   sync:
@@ -23,5 +28,6 @@ jobs:
         env:
           SEOUL_API_KEY: ${{ secrets.SEOUL_API_KEY }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          MAX_PAGES: ${{ github.event.inputs.max_pages }}
         run: node syncAptPrices.js
         working-directory: scripts

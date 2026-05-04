@@ -31,7 +31,8 @@ async function main() {
   const buildings = {};
 
   // 전체 페이지 순차 fetch
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const maxPages = process.env.MAX_PAGES ? parseInt(process.env.MAX_PAGES) : Infinity;
+  const totalPages = Math.min(Math.ceil(total / PAGE_SIZE), maxPages);
   for (let page = 0; page < totalPages; page++) {
     const start = page * PAGE_SIZE + 1;
     const end = Math.min(start + PAGE_SIZE - 1, total);
