@@ -6,7 +6,7 @@ const db = admin.firestore();
 
 const SEOUL_KEY = process.env.SEOUL_API_KEY;
 const SVC = "tbLnOpendataRtmsV";
-const PAGE_SIZE = 5000;
+const PAGE_SIZE = 1000;
 
 async function fetchPage(start, end) {
   const url = `http://openapi.seoul.go.kr:8088/${SEOUL_KEY}/json/${SVC}/${start}/${end}/`;
