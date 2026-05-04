@@ -14,6 +14,13 @@ import stageData from "../data/cleanup_stages.json";
 import polygonStageMap from "../data/polygon_stage_map.json";
 import apartmentData from "../data/apartments.json";
 import { predictProfitability } from "../utils/predictModel";
+import { formatKoreanPrice } from "../utils/format";
+import { getAptPrice } from "../services/realEstateService";
+
+const APT_PREDICTIONS = apartmentData.reduce((acc, apt) => {
+  acc[apt.id] = predictProfitability(apt.ai_inputs || {});
+  return acc;
+}, {});
 
 // ---------------------------
 // Kakao SDK Loader
@@ -51,7 +58,6 @@ const defaultCenter = { lat: 37.531, lng: 127.0039 };
 const NAME_KEYS = ["ALIAS", "name", "NAME", "title", "TITLE", "zone_name", "DGM_NM"];
 const AREA_KEYS = ["area", "AREA", "land_area", "plan_area", "DGM_AR", "SHAPE_AREA"];
 
-// 진행단계별 색상
 const STAGE_COLORS = {
   "정비계획 수립":   "#B0C4FF",
   "정비구역지정":    "#7799FF",
@@ -97,19 +103,8 @@ const toNumberOrNull = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-// 금액을 억, 만원 단위로 변환하는 함수
-const formatKoreanPrice = (val) => {
-  if (!val) return "0원";
-  if (val >= 100000000) {
-    const eok = Math.floor(val / 100000000);
-    const remainder = Math.round((val % 100000000) / 10000);
-    return remainder > 0 ? `${eok.toLocaleString()}억 ${remainder.toLocaleString()}만원` : `${eok.toLocaleString()}억원`;
-  }
-  return `${Math.round(val / 10000).toLocaleString()}만원`;
-};
-
 const getDistance = (lat1, lng1, lat2, lng2) => {
-  const R = 6371; 
+  const R = 6371;
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLng = (lng2 - lng1) * (Math.PI / 180);
   const a =
@@ -118,17 +113,15 @@ const getDistance = (lat1, lng1, lat2, lng2) => {
       Math.cos(lat2 * (Math.PI / 180)) *
       Math.sin(dLng / 2) *
       Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
+
 
 function MapContainer({ title, height }) {
   const [kakaoReady, setKakaoReady] = useState(false);
   const [keyword, setKeyword] = useState("");
-  
-  // 패널별 독립적 상태
+
   const [isZoneOpen, setIsZoneOpen] = useState(false);
-  const [isPredictOpen, setIsPredictOpen] = useState(false);
   const [isNearbyOpen, setIsNearbyOpen] = useState(false);
 
   const [panelData, setPanelData] = useState({});
@@ -140,6 +133,9 @@ function MapContainer({ title, height }) {
     level: 5,
   });
   const [zoneFeatures] = useState(zoneData.features || []);
+  const [circleCenter, setCircleCenter] = useState(null);
+  const [nearbyPlaces, setNearbyPlaces] = useState([]);
+  const [loadingPlaces, setLoadingPlaces] = useState(false);
   const mapRef = useRef(null);
 
   const allPolygons = useMemo(() => {
@@ -161,9 +157,22 @@ function MapContainer({ title, height }) {
       const allCoords = rings.flat();
       const lats = allCoords.map(([, lat]) => lat);
       const lngs = allCoords.map(([lng]) => lng);
-      const bbox = { minLat: Math.min(...lats), maxLat: Math.max(...lats), minLng: Math.min(...lngs), maxLng: Math.max(...lngs) };
+      // reduce 사용 — spread는 좌표 수천 개일 때 스택 오버플로우 가능
+      const bbox = {
+        minLat: lats.reduce((a, b) => (b < a ? b : a), Infinity),
+        maxLat: lats.reduce((a, b) => (b > a ? b : a), -Infinity),
+        minLng: lngs.reduce((a, b) => (b < a ? b : a), Infinity),
+        maxLng: lngs.reduce((a, b) => (b > a ? b : a), -Infinity),
+      };
       const paths = rings.map((ring) => ring.map(([lng, lat]) => ({ lat, lng })));
-      const panelInfo = { name: info?.사업장명 || alias, area: toNumberOrNull(getValueFromKeys(props, AREA_KEYS)), type: info?.사업구분 || "정비구역", stage: info?.진행단계, district: info?.자치구, location: info?.대표지번 };
+      const panelInfo = {
+        name: info?.사업장명 || alias,
+        area: toNumberOrNull(getValueFromKeys(props, AREA_KEYS)),
+        type: info?.사업구분 || "정비구역",
+        stage: info?.진행단계,
+        district: info?.자치구,
+        location: info?.대표지번,
+      };
       return { idx, paths, color, bbox, panelInfo };
     }).filter(Boolean);
   }, [zoneFeatures]);
@@ -172,7 +181,13 @@ function MapContainer({ title, height }) {
     if (mapBounds.level >= 9) return [];
     const { swLat, swLng, neLat, neLng } = mapBounds;
     const pad = 0.02;
-    return allPolygons.filter(({ bbox }) => bbox.maxLat >= swLat - pad && bbox.minLat <= neLat + pad && bbox.maxLng >= swLng - pad && bbox.minLng <= neLng + pad);
+    return allPolygons.filter(
+      ({ bbox }) =>
+        bbox.maxLat >= swLat - pad &&
+        bbox.minLat <= neLat + pad &&
+        bbox.maxLng >= swLng - pad &&
+        bbox.minLng <= neLng + pad
+    );
   }, [allPolygons, mapBounds]);
 
   const updateBounds = useCallback(() => {
@@ -181,11 +196,59 @@ function MapContainer({ title, height }) {
     const bounds = map.getBounds();
     const sw = bounds.getSouthWest();
     const ne = bounds.getNorthEast();
-    setMapBounds({ swLat: sw.getLat(), swLng: sw.getLng(), neLat: ne.getLat(), neLng: ne.getLng(), level: map.getLevel() });
+    setMapBounds({
+      swLat: sw.getLat(), swLng: sw.getLng(),
+      neLat: ne.getLat(), neLng: ne.getLng(),
+      level: map.getLevel(),
+    });
   }, []);
 
   useEffect(() => {
-    loadKakaoSdk(kakaoAppKey).then(() => setKakaoReady(true)).catch((err) => console.error(err));
+    loadKakaoSdk(kakaoAppKey)
+      .then(() => setKakaoReady(true))
+      .catch((err) => console.error(err));
+  }, []);
+
+  const PLACE_EXCLUDE = ["후문", "관리사무소", "경비실", "입구", "출입구", "주차장", "상가", "어린이집", "유치원", "경로당", "노인정", "커뮤니티센터", "도서관", "진출입로", "지하주차장", "경비초소"];
+
+  const searchNearbyApartments = useCallback(async (lat, lng) => {
+    const svc = window.kakao?.maps?.services;
+    if (!svc) return;
+    setLoadingPlaces(true);
+    setNearbyPlaces([]);
+
+    const places = await new Promise((resolve) => {
+      const ps = new svc.Places();
+      ps.keywordSearch("아파트", (data, status) => {
+        resolve(status === svc.Status.OK ? data : []);
+      }, {
+        location: new window.kakao.maps.LatLng(lat, lng),
+        radius: 1500,
+        sort: svc.SortBy.DISTANCE,
+        size: 15,
+      });
+    });
+
+    const filtered = places.filter((p) => {
+      const cat = p.category_name || "";
+      if (!cat.includes("아파트")) return false;
+      return !PLACE_EXCLUDE.some((kw) => p.place_name.includes(kw));
+    });
+
+    const results = await Promise.all(
+      filtered.map(async (p) => ({
+        name: p.place_name,
+        lat: parseFloat(p.y),
+        lng: parseFloat(p.x),
+        distance: parseInt(p.distance, 10),
+        address: p.road_address_name || p.address_name,
+        url: p.place_url,
+        priceInfo: await getAptPrice(p.place_name),
+      }))
+    );
+
+    setNearbyPlaces(results);
+    setLoadingPlaces(false);
   }, []);
 
   const handlePolygonClick = useCallback((panelInfo, paths) => {
@@ -193,7 +256,7 @@ function MapContainer({ title, height }) {
     if (panelInfo.bbox) {
       centerLat = (panelInfo.bbox.minLat + panelInfo.bbox.maxLat) / 2;
       centerLng = (panelInfo.bbox.minLng + panelInfo.bbox.maxLng) / 2;
-    } else if (paths && paths[0] && paths[0][0]) {
+    } else if (paths?.[0]?.[0]) {
       centerLat = paths[0][0].lat;
       centerLng = paths[0][0].lng;
     } else {
@@ -201,31 +264,38 @@ function MapContainer({ title, height }) {
       centerLng = mapCenter.lng;
     }
 
-    const zoneName = panelInfo.name || "";
-    const selfAptData = apartmentData.find(apt => zoneName.includes(apt.id) || apt.name.includes(zoneName) || zoneName.includes(apt.name.split(' ')[0]));
-    const zonePrediction = selfAptData ? predictProfitability(selfAptData.ai_inputs) : null;
-    const nearbyApts = apartmentData.map(apt => ({ ...apt, distance: getDistance(centerLat, centerLng, apt.lat, apt.lng), prediction: predictProfitability(apt.ai_inputs || {}) })).filter(apt => apt.distance <= 1.5).sort((a, b) => a.distance - b.distance);
+    const redevApts = apartmentData
+      .map((apt) => ({
+        ...apt,
+        distance: getDistance(centerLat, centerLng, apt.lat, apt.lng),
+        prediction: APT_PREDICTIONS[apt.id],
+      }))
+      .filter((apt) => apt.distance <= 1.5)
+      .sort((a, b) => a.distance - b.distance);
 
-    setPanelData({ ...panelInfo, zonePrediction, matchingApt: selfAptData, nearbyApts });
+    setCircleCenter({ lat: centerLat, lng: centerLng });
+    searchNearbyApartments(centerLat, centerLng);
+    setPanelData({ ...panelInfo, nearbyApts: redevApts });
     setIsZoneOpen(true);
-    setIsPredictOpen(!!zonePrediction);
-    setIsNearbyOpen(nearbyApts.length > 0);
-  }, [mapCenter, apartmentData]);
+    setIsNearbyOpen(true);
+  }, [mapCenter, searchNearbyApartments]);
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     const term = keyword.trim();
     if (!term) return alert("이름을 입력하세요");
     const norm = term.replace(/\s+/g, "").toLowerCase();
-    const matchPolygon = allPolygons.find(({ panelInfo }) => (panelInfo.name || "").replace(/\s+/g, "").toLowerCase().includes(norm));
+    const matchPolygon = allPolygons.find(({ panelInfo }) =>
+      (panelInfo.name || "").replace(/\s+/g, "").toLowerCase().includes(norm)
+    );
     if (matchPolygon) {
       const firstPath = matchPolygon.paths[0];
       setMapCenter({ lat: firstPath[0].lat, lng: firstPath[0].lng });
       setMapLevel(4);
-      handlePolygonClick(matchPolygon.panelInfo, matchPolygon.paths);
+      handlePolygonClick({ ...matchPolygon.panelInfo, bbox: matchPolygon.bbox }, matchPolygon.paths);
       return;
     }
     alert("검색 결과 없음");
-  };
+  }, [keyword, allPolygons, handlePolygonClick]);
 
   if (!kakaoAppKey) return <div>API KEY ERROR</div>;
   if (!kakaoReady) return <div>지도 로딩 중...</div>;
@@ -233,10 +303,40 @@ function MapContainer({ title, height }) {
   return (
     <section className="map-fullscreen" style={{ height: height || "100vh" }}>
       <div className="map-fullscreen__canvas">
-        <KakaoMap center={mapCenter} level={mapLevel} style={{ width: "100%", height: "100%" }} onCreate={(map) => { mapRef.current = map; }} onDragEnd={updateBounds} onZoomChanged={updateBounds}>
-          {visiblePolygons.map(({ idx, paths, color, panelInfo }) => paths.map((path, rIdx) => (
-            <Polygon key={`zone-${idx}-${rIdx}`} path={path} strokeWeight={2} strokeColor={color} strokeOpacity={0.8} fillColor={color} fillOpacity={0.2} onClick={() => handlePolygonClick(panelInfo, paths)} />
-          )))}
+        <KakaoMap
+          center={mapCenter}
+          level={mapLevel}
+          style={{ width: "100%", height: "100%" }}
+          onCreate={(map) => { mapRef.current = map; }}
+          onDragEnd={updateBounds}
+          onZoomChanged={updateBounds}
+        >
+          {visiblePolygons.map(({ idx, paths, color, panelInfo, bbox }) =>
+            paths.map((path, rIdx) => (
+              <Polygon
+                key={`zone-${idx}-${rIdx}`}
+                path={path}
+                strokeWeight={color === "#CCCCCC" ? 1 : 2}
+                strokeColor={color}
+                strokeOpacity={color === "#CCCCCC" ? 0.5 : 0.8}
+                fillColor={color}
+                fillOpacity={color === "#CCCCCC" ? 0.08 : 0.2}
+                onClick={() => handlePolygonClick({ ...panelInfo, bbox }, paths)}
+              />
+            ))
+          )}
+          {circleCenter && (
+            <Circle
+              center={circleCenter}
+              radius={1500}
+              strokeWeight={2}
+              strokeColor="#2268a0"
+              strokeOpacity={0.7}
+              strokeStyle="solid"
+              fillColor="#2268a0"
+              fillOpacity={0.05}
+            />
+          )}
         </KakaoMap>
       </div>
 
@@ -245,7 +345,12 @@ function MapContainer({ title, height }) {
           <p className="map-overlay-eyebrow">SEE:REAL</p>
           <h2>{title || "재개발 구역 통합 지도"}</h2>
           <div className="map-search-row">
-            <input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="구역명 검색" onKeyDown={(e) => e.key === "Enter" && handleSearch()} />
+            <input
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="구역명 검색"
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            />
             <button onClick={handleSearch}>검색</button>
           </div>
         </div>
@@ -253,59 +358,55 @@ function MapContainer({ title, height }) {
         <div className={`map-info-panel left${isZoneOpen ? " open" : ""}`}>
           <InfoPanel type="zone" data={panelData} onClose={() => setIsZoneOpen(false)} />
         </div>
-
-        <div className={`map-info-panel prediction${isPredictOpen ? " open" : ""}`}>
-          <div className="side-panel-container prediction">
-            <button className="side-panel-close" onClick={() => setIsPredictOpen(false)}>×</button>
-            <div className="side-panel-content">
-              <h3 className="side-panel-title">수익성 예측 결과</h3>
-              {panelData.zonePrediction && (
-                <>
-                  <div className="ai-result-card">
-                    <div className="ai-result-main">
-                      <span className={`ai-direction ${panelData.zonePrediction.direction === "수익성 높음" ? "high" : panelData.zonePrediction.direction === "보통" ? "normal" : "low"}`}>{panelData.zonePrediction.direction}</span>
-                      <div className="ai-score">점수: <strong>{panelData.zonePrediction.score}</strong></div>
-                    </div>
-                    <div className="ai-details">
-                      <div className="ai-detail-item"><label>비례율</label><span>{panelData.zonePrediction.predRatio}%</span></div>
-                      <div className="ai-detail-item"><label>분담금</label><span>{formatKoreanPrice(panelData.zonePrediction.predCost)}</span></div>
-                    </div>
-                  </div>
-                  <details className="raw-inputs-details" open>
-                    <summary>예측 변수 원본 데이터 (X값)</summary>
-                    <div className="raw-inputs-grid">
-                      <div className="raw-input-item"><label>공시지가</label><span>{formatKoreanPrice(panelData.matchingApt?.ai_inputs.landPrice)}</span></div>
-                      <div className="raw-input-item"><label>일반분양</label><span>{panelData.matchingApt?.ai_inputs.generalSales}%</span></div>
-                      <div className="raw-input-item"><label>노후도</label><span>{panelData.matchingApt?.ai_inputs.agingDegree}%</span></div>
-                      <div className="raw-input-item"><label>실거래가</label><span>{formatKoreanPrice(panelData.matchingApt?.ai_inputs.actualPrice)}</span></div>
-                    </div>
-                  </details>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
 
       <div className={`map-info-panel right${isNearbyOpen ? " open" : ""}`}>
         <div className="side-panel-container">
-          <button className="side-panel-close" onClick={() => setIsNearbyOpen(false)}>×</button>
+          <button className="side-panel-close" onClick={() => { setIsNearbyOpen(false); setCircleCenter(null); }}>×</button>
           <div className="side-panel-content">
-            <h3 className="side-panel-title">인근 단지 수익성 분석</h3>
-            <div className="nearby-list">
-              {panelData.nearbyApts && panelData.nearbyApts.map((apt) => (
-                <div key={apt.id} className="nearby-item">
-                  <div className="nearby-info"><span className="nearby-name">{apt.name}</span><span className="nearby-dist">{(apt.distance * 1000).toFixed(0)}m</span></div>
-                  <div className="ai-result-card">
-                    <div className="ai-result-main">
-                      <span className={`ai-direction ${apt.prediction.direction === "수익성 높음" ? "high" : apt.prediction.direction === "보통" ? "normal" : "low"}`}>{apt.prediction.direction}</span>
-                      <div className="ai-score">점수: <strong>{apt.prediction.score}</strong></div>
+            <h3 className="side-panel-title">1.5km 반경 아파트</h3>
+
+            {panelData.nearbyApts?.length > 0 && (
+              <div className="nearby-section">
+                <p className="nearby-section-label">재개발 완료 단지</p>
+                {panelData.nearbyApts.map((apt) => (
+                  <div key={apt.id} className="nearby-item">
+                    <div className="nearby-info">
+                      <span className="nearby-badge redev">재완</span>
+                      <span className="nearby-name">{apt.name}</span>
+                      <span className="nearby-dist">{(apt.distance * 1000).toFixed(0)}m</span>
                     </div>
-                    <div className="ai-details">
-                      <div className="ai-detail-item"><label>비례율</label><span>{apt.prediction.predRatio}%</span></div>
-                      <div className="ai-detail-item"><label>분담금</label><span>{formatKoreanPrice(apt.prediction.predCost)}</span></div>
-                    </div>
+                    {apt.prediction && (
+                      <div className="ai-details">
+                        <div className="ai-detail-item"><label>비례율</label><span>{apt.prediction.predRatio}%</span></div>
+                        <div className="ai-detail-item"><label>분담금</label><span>{formatKoreanPrice(apt.prediction.predCost)}</span></div>
+                      </div>
+                    )}
                   </div>
+                ))}
+              </div>
+            )}
+
+            <div className="nearby-section">
+              <p className="nearby-section-label">주변 아파트</p>
+              {loadingPlaces && <p className="nearby-loading">검색 중...</p>}
+              {!loadingPlaces && nearbyPlaces.length === 0 && (
+                <p className="nearby-empty">검색 결과 없음</p>
+              )}
+              {nearbyPlaces.map((p, i) => (
+                <div key={i} className="nearby-item">
+                  <div className="nearby-info">
+                    <span className="nearby-name">{p.name}</span>
+                    <span className="nearby-dist">{p.distance}m</span>
+                  </div>
+                  {p.priceInfo ? (
+                    <p className="nearby-price">
+                      <span className="nearby-price-size">{p.priceInfo.pyeong}평</span>
+                      {formatKoreanPrice(p.priceInfo.avgPrice)}
+                    </p>
+                  ) : (
+                    <p className="nearby-address">{p.address}</p>
+                  )}
                 </div>
               ))}
             </div>

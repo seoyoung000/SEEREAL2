@@ -1,14 +1,9 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
+import { formatKoreanPrice } from "../utils/format";
 import "./InfoPanel.css";
 
-const dealsData = [];
-const rentDealsData = [];
-
 const normalizeName = (value = "") =>
-  value
-    .toString()
-    .replace(/\s+/g, " ")
-    .trim();
+  value.toString().replace(/\s+/g, " ").trim();
 
 const SIMPLE_ZONES = [
   "한남 지구단위계획구역",
@@ -23,45 +18,12 @@ const SIMPLE_ZONES = [
   "한남5재정비촉진구역",
 ].map(normalizeName);
 
-const normalizeDealKey = (value = "") =>
-  value.toString().replace(/\s+/g, "").toLowerCase();
-
-const SALE_DEALS_BY_COMPLEX = dealsData.reduce((acc, deal) => {
-  const key = normalizeDealKey(deal.name);
-  if (!key) return acc;
-  acc[key] = acc[key] || [];
-  acc[key].push({
-    type: "sale",
-    price: deal.deal_price ?? deal.price ?? null,
-    area_m2: deal.area_m2 ?? null,
-    floor: deal.floor ?? null,
-    date: deal.deal_date ?? null,
-  });
-  return acc;
-}, {});
-
-const RENT_DEALS_BY_COMPLEX = rentDealsData.reduce((acc, deal) => {
-  const key = normalizeDealKey(deal.name);
-  if (!key) return acc;
-  acc[key] = acc[key] || [];
-  acc[key].push({
-    type: deal.type || "jeonse",
-    deposit: deal.deposit ?? null,
-    monthly_rent: deal.monthly_rent ?? null,
-    area_m2: deal.area_m2 ?? null,
-    floor: deal.floor ?? null,
-    date: deal.deal_date ?? null,
-  });
-  return acc;
-}, {});
-
 function InfoPanel({ type = "zone", data, onClose }) {
   const [dealType, setDealType] = useState("sale");
-  
+
   const panelData = data || {};
   const zoneStats = Array.isArray(panelData.stats) ? panelData.stats : [];
-  const latestZoneStat =
-    zoneStats.length > 0 ? zoneStats[zoneStats.length - 1] : null;
+  const latestZoneStat = zoneStats.length > 0 ? zoneStats[zoneStats.length - 1] : null;
   const recentZoneStats = useMemo(() => zoneStats.slice(-4), [zoneStats]);
 
   const simpleKey = normalizeName(panelData.name || panelData.note || "");
@@ -74,63 +36,32 @@ function InfoPanel({ type = "zone", data, onClose }) {
         zoneName.includes(simpleKey)
     );
 
-  const complexNameKey = useMemo(
-    () => normalizeDealKey(panelData.name || ""),
-    [panelData.name]
-  );
-
   const normalizedComplexDeals = useMemo(() => {
-    const builtInDeals = Array.isArray(panelData.deals)
-      ? panelData.deals.map((deal) => ({
-          type: deal.type || "sale",
-          price:
-            deal.price ??
-            deal.deal_price ??
-            deal.amount ??
-            deal.value ??
-            null,
-          deposit: deal.deposit ?? null,
-          monthly_rent: deal.monthly_rent ?? null,
-          area_m2: deal.area_m2 ?? deal.area ?? null,
-          floor: deal.floor ?? null,
-          date: deal.date || deal.deal_date || null,
-        }))
-      : [];
+    if (!Array.isArray(panelData.deals)) return [];
 
-    const validBuiltIn = builtInDeals.filter(
-      (deal) =>
-        typeof deal.type === "string" &&
-        (deal.type !== "sale" || typeof deal.price === "number")
-    );
-
-    if (validBuiltIn.length > 0) {
-      return validBuiltIn.sort((a, b) =>
-        (b.date || "").localeCompare(a.date || "")
+    const deals = panelData.deals
+      .map((deal) => ({
+        type: deal.type || "sale",
+        price: deal.price ?? deal.deal_price ?? deal.amount ?? deal.value ?? null,
+        deposit: deal.deposit ?? null,
+        monthly_rent: deal.monthly_rent ?? null,
+        area_m2: deal.area_m2 ?? deal.area ?? null,
+        floor: deal.floor ?? null,
+        date: deal.date || deal.deal_date || null,
+      }))
+      .filter(
+        (deal) =>
+          typeof deal.type === "string" &&
+          (deal.type !== "sale" || typeof deal.price === "number")
       );
-    }
 
-    const fallback = [
-      ...(SALE_DEALS_BY_COMPLEX[complexNameKey] || []),
-      ...(RENT_DEALS_BY_COMPLEX[complexNameKey] || []),
-    ];
+    return deals.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  }, [panelData.deals]);
 
-    return fallback.sort((a, b) =>
-      (b.date || "").localeCompare(a.date || "")
-    );
-  }, [panelData.deals, complexNameKey]);
+  if (!data) return null;
 
   const formatNumber = (num) =>
     num || num === 0 ? Number(num).toLocaleString() : "N/A";
-
-  const formatKoreanPrice = (val) => {
-    if (!val) return "0원";
-    if (val >= 100000000) {
-      const eok = Math.floor(val / 100000000);
-      const remainder = Math.round((val % 100000000) / 10000);
-      return remainder > 0 ? `${eok.toLocaleString()}억 ${remainder.toLocaleString()}만원` : `${eok.toLocaleString()}억원`;
-    }
-    return `${Math.round(val / 10000).toLocaleString()}만원`;
-  };
 
   const formatPeriod = (stat) =>
     stat ? `${stat.year}.${stat.month.toString().padStart(2, "0")}` : "";
@@ -149,11 +80,18 @@ function InfoPanel({ type = "zone", data, onClose }) {
 
   const renderAISection = (prediction) => {
     if (!prediction) return null;
-
     return (
       <div className="ai-result-card mini">
         <div className="ai-result-main">
-          <span className={`ai-direction ${prediction.direction === "수익성 높음" ? "high" : prediction.direction === "보통" ? "normal" : "low"}`}>
+          <span
+            className={`ai-direction ${
+              prediction.direction === "수익성 높음"
+                ? "high"
+                : prediction.direction === "보통"
+                ? "normal"
+                : "low"
+            }`}
+          >
             {prediction.direction}
           </span>
           <div className="ai-score">
@@ -189,13 +127,13 @@ function InfoPanel({ type = "zone", data, onClose }) {
         },
       ];
 
-      const description =
-        "보행 단절과 주차 같은 생활 민원을 해결하고, 관광객이 머물기 좋은 환경을 만들기 위해 지정된 구역입니다.";
-
       return (
         <>
           <h2>{panelData.name || "정비구역"}</h2>
-          <p className="info-simple-text">{description}</p>
+          <p className="info-simple-text">
+            보행 단절과 주차 같은 생활 민원을 해결하고, 관광객이 머물기 좋은
+            환경을 만들기 위해 지정된 구역입니다.
+          </p>
           <div className="info-simple-details">
             {simpleDetails.map((detail) => (
               <div className="info-simple-detail" key={detail.label}>
@@ -204,8 +142,8 @@ function InfoPanel({ type = "zone", data, onClose }) {
               </div>
             ))}
             <p className="info-simple-note">
-              주변 보행 환경과 주차 공간을 정비해 한남·이태원 일대 관광
-              동선을 잇는 것이 목표입니다.
+              주변 보행 환경과 주차 공간을 정비해 한남·이태원 일대 관광 동선을
+              잇는 것이 목표입니다.
             </p>
           </div>
         </>
@@ -240,9 +178,7 @@ function InfoPanel({ type = "zone", data, onClose }) {
             <p className="info-price-value">
               {formatNumber(latestZoneStat.avg_price)}원
             </p>
-            <p className="info-price-period">
-              {formatPeriod(latestZoneStat)}
-            </p>
+            <p className="info-price-period">{formatPeriod(latestZoneStat)}</p>
             <div className="info-price-trend">
               {recentZoneStats.map((stat) => (
                 <div key={`${stat.year}-${stat.month}`}>
@@ -264,17 +200,11 @@ function InfoPanel({ type = "zone", data, onClose }) {
     const recentDisplayDeals = filteredDeals.slice(0, 5);
 
     const formatDealPrice = (deal) => {
-      if (deal.type === "sale") {
-        return `${formatNumber(deal.price)}원`;
-      }
-      if (deal.type === "jeonse") {
-        return `${formatNumber(deal.deposit)}만원`;
-      }
+      if (deal.type === "sale") return `${formatNumber(deal.price)}원`;
+      if (deal.type === "jeonse") return `${formatNumber(deal.deposit)}만원`;
       if (deal.type === "rent") {
         if (deal.monthly_rent && deal.monthly_rent > 0) {
-          return `${formatNumber(deal.deposit)}/${formatNumber(
-            deal.monthly_rent
-          )}만원`;
+          return `${formatNumber(deal.deposit)}/${formatNumber(deal.monthly_rent)}만원`;
         }
         return `${formatNumber(deal.deposit)}만원`;
       }
@@ -292,7 +222,8 @@ function InfoPanel({ type = "zone", data, onClose }) {
           <div className="info-item">
             <strong>세대수 / 준공년도</strong>
             <span>
-              {formatNumber(panelData.total_households)}세대 / {panelData.build_year}년
+              {formatNumber(panelData.total_households)}세대 /{" "}
+              {panelData.build_year}년
             </span>
           </div>
           {Array.isArray(panelData.areas) && panelData.areas.length > 0 && (
@@ -314,7 +245,9 @@ function InfoPanel({ type = "zone", data, onClose }) {
             <div className="info-item">
               <strong>최신 평균 실거래가</strong>
               <span>
-                {panelData.latest_avg ? `${(panelData.latest_avg / 10000).toFixed(1)}억` : "N/A"}
+                {panelData.latest_avg
+                  ? `${(panelData.latest_avg / 10000).toFixed(1)}억`
+                  : "N/A"}
               </span>
             </div>
           )}
@@ -360,9 +293,7 @@ function InfoPanel({ type = "zone", data, onClose }) {
                   <div className="deal-meta">
                     <span>{formatAreaValue(deal.area || deal.area_m2)}</span>
                     <span>
-                      {typeof deal.floor === "number"
-                        ? `${deal.floor}층`
-                        : "-"}
+                      {typeof deal.floor === "number" ? `${deal.floor}층` : "-"}
                     </span>
                   </div>
                 </div>
@@ -377,10 +308,6 @@ function InfoPanel({ type = "zone", data, onClose }) {
       </>
     );
   };
-
-  if (!data) {
-    return null;
-  }
 
   return (
     <div className="infoPanel">

@@ -1,0 +1,111 @@
+.header-container {
+  width: 100%;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f1f1;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 56px;
+}
+
+.nav-left {
+  min-width: 120px;
+}
+
+.header-logo {
+  font-size: 20px;
+  font-weight: 800;
+  color: #111;
+  text-decoration: none;
+  letter-spacing: -0.02em;
+}
+
+.nav-links {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+}
+
+.nav-links a {
+  font-size: 15px;
+  color: #364152;
+  text-decoration: none;
+  font-weight: 600;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.nav-links a:hover {
+  color: #2268a0;
+  border-bottom-color: #2268a0;
+}
+
+.nav-right {
+  min-width: 120px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.header-guest-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #7c8692;
+}
+
+.header-guest-links a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.header-user-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #5c6574;
+}
+
+.header-user-inline a {
+  color: #5c6574;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.header-user-inline button {
+  border: none;
+  background: none;
+  color: #5c6574;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+}
+
+.header-user-inline .user-name {
+  font-weight: 700;
+}
+
+.mypage-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.alert-dot {
+  width: 7px;
+  height: 7px;
+  background: #ff4d4f;
+  border-radius: 50%;
+  display: inline-block;
+}

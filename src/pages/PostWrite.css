@@ -1,0 +1,142 @@
+.write-container {
+  max-width: 900px;
+  margin: 40px auto 80px;
+  padding: 0 24px;
+}
+
+.zone-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #5d6c80;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+
+.write-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.write-title {
+  font-size: 32px;
+  margin: 4px 0 0;
+  font-weight: 800;
+}
+
+.write-author-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 18px 10px 10px;
+  border-radius: 16px;
+  border: 1px solid #e4e8ed;
+  background: #fafbff;
+}
+
+.write-author-card img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.write-author-card span {
+  font-size: 12px;
+  color: #6f7785;
+}
+
+.write-section {
+  margin-bottom: 24px;
+}
+
+.write-section label {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: block;
+  color: #1c1f24;
+}
+
+.write-input,
+.write-textarea,
+.write-select {
+  width: 100%;
+  border: 1px solid #d7dde3;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-size: 15px;
+}
+
+.write-input:focus,
+.write-textarea:focus,
+.write-select:focus {
+  outline: none;
+  border-color: #2268a0;
+  box-shadow: 0 0 0 2px rgba(34, 104, 160, 0.1);
+}
+
+.write-textarea {
+  min-height: 240px;
+  resize: none;
+}
+
+.write-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.write-counter {
+  font-size: 13px;
+  color: #8a93a1;
+}
+
+.write-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.cancel-btn,
+.submit-btn {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 28px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.cancel-btn {
+  background: #eef0f4;
+  color: #3d4652;
+}
+
+.submit-btn {
+  background: #2268a0;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 10px 20px rgba(34, 104, 160, 0.25);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.write-locked {
+  border: 1px dashed #b9c3cf;
+  border-radius: 20px;
+  padding: 60px 30px;
+  text-align: center;
+  background: #fbfcff;
+}
+
+.write-locked h2 {
+  margin-bottom: 10px;
+}

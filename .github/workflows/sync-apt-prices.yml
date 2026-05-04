@@ -1,0 +1,27 @@
+name: Sync Apartment Prices
+
+on:
+  schedule:
+    - cron: '0 15 * * *'  # 매일 KST 자정 (UTC 15:00)
+  workflow_dispatch:        # GitHub에서 수동 실행 버튼
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install firebase-admin
+        working-directory: scripts
+
+      - name: Run sync
+        env:
+          SEOUL_API_KEY: ${{ secrets.SEOUL_API_KEY }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node syncAptPrices.js
+        working-directory: scripts

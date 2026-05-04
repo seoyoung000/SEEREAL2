@@ -75,17 +75,15 @@
   cursor: pointer;
 }
 
-/* 2 & 3. 좌측 정보/예측 패널 공통 */
-.map-info-panel.left,
-.map-info-panel.prediction {
+/* 2. 좌측 구역 정보 패널 */
+.map-info-panel.left {
   opacity: 0;
   transform: translateY(-10px);
   transition: all 0.3s ease;
   display: none;
 }
 
-.map-info-panel.left.open,
-.map-info-panel.prediction.open {
+.map-info-panel.left.open {
   display: block;
   opacity: 1;
   transform: translateY(0);
@@ -100,26 +98,6 @@
   box-sizing: border-box;
 }
 
-/* 예측 패널 스크롤 설정 */
-.side-panel-container.prediction {
-  max-height: 420px; /* 최대 높이 살짝 축소 */
-  display: flex;
-  flex-direction: column;
-}
-
-.side-panel-container.prediction .side-panel-content {
-  overflow-y: auto;
-  margin-top: 5px; /* 10px -> 5px */
-}
-
-.side-panel-container.prediction .side-panel-content::-webkit-scrollbar {
-  width: 5px;
-}
-
-.side-panel-container.prediction .side-panel-content::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
-  border-radius: 10px;
-}
 
 /* 우측 패널 스타일 */
 .map-info-panel.right {
@@ -190,8 +168,9 @@
 
 .nearby-info {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .nearby-name {
@@ -202,4 +181,64 @@
 .nearby-dist {
   font-size: 12px;
   color: #94a3b8;
+}
+
+.nearby-section {
+  margin-bottom: 20px;
+}
+
+.nearby-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin: 0 0 10px;
+}
+
+.nearby-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.nearby-badge.redev {
+  background: #eff6ff;
+  color: #2268a0;
+}
+
+.nearby-address {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 2px 0 0;
+}
+
+.nearby-loading,
+.nearby-empty {
+  font-size: 13px;
+  color: #94a3b8;
+  padding: 8px 0;
+}
+
+.nearby-price {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 4px 0 0;
+}
+
+.nearby-price-size {
+  color: #64748b;
+  font-weight: 400;
+  margin-right: 6px;
+}
+
+.nearby-price-placeholder {
+  font-size: 12px;
+  color: #cbd5e1;
+  margin: 4px 0 0;
+  font-style: italic;
 }
