@@ -2,7 +2,11 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 
 function normName(name) {
-  return String(name).replace(/\s+/g, "").replace(/[^\w가-힣]/g, "").toLowerCase();
+  return String(name)
+    .replace(/\s+/g, "")
+    .replace(/아파트$/, "")   // 끝의 "아파트" 제거
+    .replace(/[^\w가-힣]/g, "")
+    .toLowerCase();
 }
 
 // Firestore apt_prices/{normName} 에서 대표 가격 조회

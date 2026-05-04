@@ -15,7 +15,11 @@ async function fetchPage(start, end) {
 }
 
 function normName(name) {
-  return String(name).replace(/\s+/g, "").replace(/[^\w가-힣]/g, "").toLowerCase();
+  return String(name)
+    .replace(/\s+/g, "")
+    .replace(/아파트$/, "")   // 끝의 "아파트" 제거
+    .replace(/[^\w가-힣]/g, "")
+    .toLowerCase();
 }
 
 function toPyeong(sqm) {
@@ -47,6 +51,7 @@ async function main() {
 
       const key = normName(r.BLDG_NM);
       if (!key || key.length < 2) return;
+      if (/^\d+$/.test(key)) return; // 숫자만 있는 건 건너뜀
 
       if (!buildings[key]) buildings[key] = { name: r.BLDG_NM, areas: {} };
 
