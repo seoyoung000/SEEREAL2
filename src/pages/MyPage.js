@@ -3,27 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { collection, collectionGroup, deleteDoc, doc, arrayRemove, getDocs, limit, onSnapshot, orderBy, query, updateDoc, where } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useAuth } from "../context/AuthContext";
+import { readableZoneName } from "../utils/zones";
 import "./MyPage.css";
-
-const FIXED_ZONES = [
-  { slug: "hannam-masterplan", name: "한남 지구단위계획구역" },
-  { slug: "itaewon-masterplan", name: "이태원로 주변 지구단위계획구역" },
-  { slug: "hannam-foreigner", name: "한남외인주택부지 지구단위계획구역" },
-  { slug: "hannam3-redev", name: "한남3재정비촉진구역" },
-  { slug: "hannam4-redev", name: "한남4재정비촉진구역 지구단위계획구역" },
-  { slug: "hannam5-redev", name: "한남5재정비촉진구역 지구단위계획구역" },
-];
-
-const readableZoneName = (id) => {
-  if (!id) return "구역 미지정";
-  const norm = id.replace(/\s+/g, "").toLowerCase();
-  const matched = FIXED_ZONES.find((zone) => {
-    const s = zone.slug.replace(/\s+/g, "").toLowerCase();
-    const n = zone.name.replace(/\s+/g, "").toLowerCase();
-    return s === norm || n === norm || s.includes(norm) || norm.includes(s) || n.includes(norm) || norm.includes(n);
-  });
-  return matched?.name || id;
-};
 
 const formatDateTime = (timestamp, withTime = false) => {
   if (!timestamp) return "-";

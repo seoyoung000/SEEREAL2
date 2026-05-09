@@ -283,6 +283,8 @@ function MapContainer({ title, height }) {
   const handleSearch = useCallback(() => {
     const term = keyword.trim();
     if (!term) return alert("이름을 입력하세요");
+
+    // 1차: 정비구역 이름 부분일치
     const norm = term.replace(/\s+/g, "").toLowerCase();
     const matchPolygon = allPolygons.find(({ panelInfo }) =>
       (panelInfo.name || "").replace(/\s+/g, "").toLowerCase().includes(norm)
@@ -294,8 +296,43 @@ function MapContainer({ title, height }) {
       handlePolygonClick({ ...matchPolygon.panelInfo, bbox: matchPolygon.bbox }, matchPolygon.paths);
       return;
     }
-    alert("검색 결과 없음");
-  }, [keyword, allPolygons, handlePolygonClick]);
+
+    // 2차: 카카오 Places 키워드 검색 (지하철역·아파트·랜드마크·다리 등)
+    const svc = window.kakao?.maps?.services;
+    if (!svc) return alert("검색 결과 없음");
+
+    const ps = new svc.Places();
+    ps.keywordSearch(term, (data, status) => {
+      if (status !== svc.Status.OK || !data?.length) {
+        return alert("검색 결과 없음");
+      }
+      const top = data[0];
+      const lat = parseFloat(top.y);
+      const lng = parseFloat(top.x);
+
+      // 검색 지점 기준 1.5km 내 재개발 완료 단지
+      const redevApts = apartmentData
+        .map((apt) => ({
+          ...apt,
+          distance: getDistance(lat, lng, apt.lat, apt.lng),
+          prediction: APT_PREDICTIONS[apt.id],
+        }))
+        .filter((apt) => apt.distance <= 1.5)
+        .sort((a, b) => a.distance - b.distance);
+
+      setMapCenter({ lat, lng });
+      setMapLevel(4);
+      setCircleCenter({ lat, lng });
+      setPanelData({
+        name: top.place_name,
+        address: top.road_address_name || top.address_name,
+        nearbyApts: redevApts,
+      });
+      setIsZoneOpen(false); // 정비구역이 아니므로 좌측 패널은 닫음
+      setIsNearbyOpen(true);
+      searchNearbyApartments(lat, lng);
+    });
+  }, [keyword, allPolygons, handlePolygonClick, searchNearbyApartments]);
 
   if (!kakaoAppKey) return <div>API KEY ERROR</div>;
   if (!kakaoReady) return <div>지도 로딩 중...</div>;
@@ -348,7 +385,7 @@ function MapContainer({ title, height }) {
             <input
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder="구역명 검색"
+              placeholder="구역·역·아파트·장소 검색"
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             />
             <button onClick={handleSearch}>검색</button>

@@ -3,17 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useAuth } from "../context/AuthContext";
-import { autoSlug } from "../utils/zones";
+import { FIXED_ZONES } from "../utils/zones";
 import "./PostWrite.css";
-
-const FIXED_ZONES = [
-  { slug: autoSlug("한남 지구단위계획구역"), name: "한남 지구단위계획구역" },
-  { slug: autoSlug("이태원로 주변 지구단위계획구역"), name: "이태원로 주변 지구단위계획구역" },
-  { slug: autoSlug("한남외인주택부지"), name: "한남외인주택부지" },
-  { slug: autoSlug("한남3재정비촉진구역"), name: "한남3재정비촉진구역" },
-  { slug: autoSlug("한남4재정비촉진구역"), name: "한남4재정비촉진구역" },
-  { slug: autoSlug("한남5재정비촉진구역"), name: "한남5재정비촉진구역" },
-];
 
 function PostWrite() {
   const { zoneId } = useParams();

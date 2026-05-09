@@ -1,6 +1,8 @@
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 
+// ⚠️ scripts/syncAptPrices.js 의 normName() 과 반드시 동일하게 유지할 것.
+// (브라우저 ESM ↔ Node CJS 환경 차이로 공유 import 가 어려워 이중 정의)
 function normName(name) {
   return String(name)
     .replace(/\s+/g, "")

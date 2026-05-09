@@ -3,25 +3,12 @@ import { collection, getDocs, limit, orderBy, query, startAfter } from "firebase
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { db } from "../firebase/config";
 import { useAuth } from "../context/AuthContext";
+import { FIXED_ZONES, getPostZoneSlug } from "../utils/zones";
 import "./CommunityList.css";
-
-export const FIXED_ZONES = [
-  { slug: "hannam-masterplan", name: "한남 지구단위계획구역" },
-  { slug: "itaewon-masterplan", name: "이태원로 주변 지구단위계획구역" },
-  { slug: "hannam-foreigner", name: "한남외인주택부지" },
-  { slug: "hannam3-redev", name: "한남3재정비촉진구역" },
-  { slug: "hannam4-redev", name: "한남4재정비촉진구역" },
-  { slug: "hannam5-redev", name: "한남5재정비촉진구역" },
-];
 
 const CATEGORY_TABS = ["전체", "공지", "정보공유", "질문", "후기"];
 const PAGE_SIZE = 10;
 const MAX_PAGE_BTNS = 5;
-
-function getPostZoneSlug(post) {
-  if (!post) return "";
-  return post.zoneId || post.zoneSlug || post.zone || "";
-}
 
 function CommunityList() {
   const { zoneId } = useParams();
